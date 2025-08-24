@@ -111,6 +111,7 @@ style_options = {
 selected_style = st.selectbox("Escolha um estilo para a animação:", options=list(style_options.keys()))
 
 # Botão para iniciar o processo
+# --- NOVO BLOCO DE CÓDIGO (MAIS ESTÁVEL) ---
 if st.button("Gerar Animação ✨"):
     if uploaded_file is not None:
         # Salva o arquivo de áudio temporariamente
@@ -118,45 +119,53 @@ if st.button("Gerar Animação ✨"):
         with open(audio_path, "wb") as f:
             f.write(uploaded_file.getbuffer())
 
-        # Inicia o processo com spinners de feedback
-        with st.spinner("Passo 1/4: Transcrevendo o áudio... 🤫"):
-            transcribed_text = transcribe_audio(audio_path)
-            st.success("Áudio transcrito com sucesso!")
-            with st.expander("Ver transcrição"):
-                st.write(transcribed_text)
+        # Usa uma barra de progresso para todos os passos
+        progress_bar = st.progress(0, text="Iniciando o processo...")
 
+        # Passo 1: Transcrição
+        progress_bar.progress(10, text="Passo 1/3: Transcrevendo o áudio...")
+        transcribed_text = transcribe_audio(audio_path)
+        with st.expander("Ver transcrição do áudio"):
+            st.write(transcribed_text)
+        
         sentences = segment_text(transcribed_text)
         if not sentences:
             st.error("Não foi possível extrair sentenças do áudio. Tente um áudio mais claro.")
             st.stop()
 
+        # Passo 2: Geração de Imagens
         image_paths = []
-        progress_bar = st.progress(0, text="Passo 2/4: Gerando imagens para cada sentença... 🖼️")
-        
+        total_sentences = len(sentences)
         for i, sentence in enumerate(sentences):
+            # Atualiza o texto e o progresso
+            progress_text = f"Passo 2/3: Gerando imagem {i + 1}/{total_sentences}..."
+            current_progress = 10 + int(80 * (i + 1) / total_sentences)
+            progress_bar.progress(current_progress, text=progress_text)
+
             image_path = generate_image_for_sentence(sentence, style_options[selected_style], i)
             if image_path:
                 image_paths.append(image_path)
-            # Atualiza a barra de progresso
-            progress_bar.progress((i + 1) / len(sentences), text=f"Gerando imagem {i+1}/{len(sentences)}")
-            time.sleep(1) # Pequena pausa para evitar sobrecarga na API
-
+        
         if not image_paths:
             st.error("Nenhuma imagem foi gerada. Verifique os logs de erro.")
             st.stop()
 
-        st.success("Todas as imagens foram geradas!")
+        # Passo 3: Criação do Vídeo
+        progress_bar.progress(95, text="Passo 3/3: Montando o vídeo final...")
+        video_path = create_video_from_images(image_paths, audio_path)
+        
+        # Finaliza a barra de progresso e mostra o resultado
+        progress_bar.progress(100, text="Processo concluído!")
+        time.sleep(1) # Dá um segundo para o usuário ver a conclusão
+        progress_bar.empty() # Remove a barra de progresso
 
-        with st.spinner("Passo 3/4: Montando o vídeo final... 🎬"):
-            video_path = create_video_from_images(image_paths, audio_path)
-            st.success("Animação criada com sucesso!")
-
+        st.success("Animação criada com sucesso!")
         st.header("Assista sua Animação!")
+        
         video_file = open(video_path, 'rb')
         video_bytes = video_file.read()
         st.video(video_bytes)
 
-        # Botão para download
         st.download_button(
             label="Baixar Vídeo 📥",
             data=video_bytes,
@@ -164,10 +173,9 @@ if st.button("Gerar Animação ✨"):
             mime="video/mp4"
         )
         
-        # Limpa os arquivos temporários
-        with st.spinner("Passo 4/4: Limpando arquivos temporários..."):
-            for file in os.listdir("temp"):
-                os.remove(os.path.join("temp", file))
+        # Limpa os arquivos temporários em segundo plano
+        for file in os.listdir("temp"):
+            os.remove(os.path.join("temp", file))
     
     else:
         st.warning("Por favor, faça o upload de um arquivo de áudio primeiro.")
