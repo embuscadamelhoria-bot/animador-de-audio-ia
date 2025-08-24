@@ -2,3 +2,4 @@ streamlit
 openai
 requests
 moviepy
+# Forçar reinstalação 1.0
