@@ -1,5 +1,4 @@
 streamlit
 openai
 requests
-moviepy==1.0.3
-numpy==1.23.5
+moviepy
