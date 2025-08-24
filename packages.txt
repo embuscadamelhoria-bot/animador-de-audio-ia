@@ -1,0 +1,2 @@
+ffmpeg
+```    *   Isso dirá ao Streamlit Cloud para instalar o FFmpeg no ambiente antes de instalar as bibliotecas Python, resolvendo o erro que você estava enfrentando.
